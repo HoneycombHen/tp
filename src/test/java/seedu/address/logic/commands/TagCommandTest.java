@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 
 import seedu.address.commons.core.index.Index;
 import seedu.address.logic.Messages;
+import seedu.address.logic.parser.TagCommandParser;
+import seedu.address.logic.parser.exceptions.ParseException;
 import seedu.address.model.AddressBook;
 import seedu.address.model.Model;
 import seedu.address.model.ModelManager;
@@ -74,6 +76,21 @@ public class TagCommandTest {
     }
 
     @Test
+    public void execute_duplicateTagsInInput_addsTagOnce() throws ParseException {
+        TagCommand command = new TagCommandParser().parse("1 t/java t/java");
+        Set<Tag> updatedTags = new HashSet<>(ALICE.getTags());
+        updatedTags.add(new Tag("java"));
+        Person updatedPerson = new Person(ALICE.getName(), ALICE.getPhone(), ALICE.getEmail(), ALICE.getLinkedIn(),
+                updatedTags);
+        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
+        expectedModel.setPerson(ALICE, updatedPerson);
+        String expectedMessage = String.format(TagCommand.MESSAGE_SUCCESS, Messages.format(updatedPerson));
+
+        assertCommandSuccess(command, model, expectedMessage, expectedModel);
+        assertEquals(updatedTags, model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased()).getTags());
+    }
+
+    @Test
     public void execute_validIndexFilteredList_addsTagToDisplayedPerson() {
         showPersonAtIndex(model, INDEX_SECOND_PERSON);
         Set<Tag> updatedTags = new HashSet<>(BENSON.getTags());
@@ -104,6 +121,8 @@ public class TagCommandTest {
                 Set.of(new Tag("work")));
 
         assertCommandFailure(command, model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
+        assertCommandFailure(new TagCommand(Index.fromOneBased(Integer.MAX_VALUE), Set.of(new Tag("work"))),
+                model, Messages.MESSAGE_INVALID_PERSON_DISPLAYED_INDEX);
     }
 
     @Test
